@@ -8,7 +8,9 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-mongoose.connect("mongodb://127.0.0.1:27017/dsaTracker");
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => console.log("MongoDB connected"))
+  .catch(err => console.log(err));
 
 const UserSchema = new mongoose.Schema({
   email: String,
@@ -41,6 +43,10 @@ app.post("/login", async (req, res) => {
   const token = jwt.sign({ id: user._id }, "secretkey");
 
   res.json({ token });
+});
+
+app.get("/", (req, res) => {
+  res.send("Backend is running 🚀");
 });
 
 const PORT = process.env.PORT || 5000;
