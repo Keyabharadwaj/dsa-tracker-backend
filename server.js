@@ -6,12 +6,21 @@ const bcrypt = require("bcryptjs");
 
 const app = express();
 app.use(express.json());
-app.use(cors());
+app.use(cors({
+  origin: "*"
+}));
 
+// ✅ MongoDB connection
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("MongoDB connected"))
   .catch(err => console.log(err));
 
+// ✅ Test route
+app.get("/", (req, res) => {
+  res.send("Backend is running 🚀");
+});
+
+// ✅ User schema
 const UserSchema = new mongoose.Schema({
   email: String,
   password: String,
@@ -19,7 +28,7 @@ const UserSchema = new mongoose.Schema({
 
 const User = mongoose.model("User", UserSchema);
 
-// REGISTER
+// ✅ Register
 app.post("/register", async (req, res) => {
   const { email, password } = req.body;
   const hashed = await bcrypt.hash(password, 10);
@@ -27,26 +36,22 @@ app.post("/register", async (req, res) => {
   const user = new User({ email, password: hashed });
   await user.save();
 
-  res.send("User registered");
+  res.json({ message: "User registered" });
 });
 
-// LOGIN
+// ✅ Login
 app.post("/login", async (req, res) => {
   const { email, password } = req.body;
 
   const user = await User.findOne({ email });
-  if (!user) return res.send("User not found");
+  if (!user) return res.json({ error: "User not found" });
 
   const valid = await bcrypt.compare(password, user.password);
-  if (!valid) return res.send("Wrong password");
+  if (!valid) return res.json({ error: "Wrong password" });
 
-  const token = jwt.sign({ id: user._id }, "secretkey");
+  const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET);
 
   res.json({ token });
-});
-
-app.get("/", (req, res) => {
-  res.send("Backend is running 🚀");
 });
 
 const PORT = process.env.PORT || 5000;
