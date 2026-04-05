@@ -41,17 +41,34 @@ app.post("/register", async (req, res) => {
 
 // ✅ Login
 app.post("/login", async (req, res) => {
-  const { email, password } = req.body;
+  try {
+    const { email, password } = req.body;
 
-  const user = await User.findOne({ email });
-  if (!user) return res.json({ error: "User not found" });
+    console.log("Login request:", email, password); // DEBUG
 
-  const valid = await bcrypt.compare(password, user.password);
-  if (!valid) return res.json({ error: "Wrong password" });
+    const user = await User.findOne({ email });
+    if (!user) {
+      console.log("User not found");
+      return res.json({ error: "User not found" });
+    }
 
-  const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET);
+    const valid = await bcrypt.compare(password, user.password);
+    if (!valid) {
+      console.log("Wrong password");
+      return res.json({ error: "Wrong password" });
+    }
 
-  res.json({ token });
+    const token = jwt.sign(
+      { id: user._id },
+      process.env.JWT_SECRET || "fallback_secret"
+    );
+
+    res.json({ token });
+
+  } catch (err) {
+    console.log("Login Error:", err); // 👈 THIS WILL SHOW REAL ERROR
+    res.status(500).json({ error: "Server error" });
+  }
 });
 
 const PORT = process.env.PORT || 5000;
