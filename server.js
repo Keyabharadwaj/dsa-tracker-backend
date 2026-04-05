@@ -9,7 +9,7 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-mongoose.connect(process.env.MONGO_URI)
+mongoose.connect(process.env.MONGOURI)
   .then(() => console.log("MongoDB connected"))
   .catch(err => console.log(err));
 
@@ -43,23 +43,42 @@ app.post("/register", async (req, res) => {
 
 app.post("/login", async (req, res) => {
   try {
+    console.log("BODY:", req.body);
+
     const { email, password } = req.body;
 
+    if (!email || !password) {
+      return res.json({ error: "Missing fields" });
+    }
+
     const user = await User.findOne({ email });
-    if (!user) return res.json({ error: "User not found" });
+    console.log("USER:", user);
+
+    if (!user) {
+      return res.json({ error: "User not found" });
+    }
+
+    console.log("Entered password:", password);
+    console.log("Stored password:", user.password);
 
     const valid = await bcrypt.compare(password, user.password);
-    if (!valid) return res.json({ error: "Wrong password" });
+    console.log("Password match:", valid);
+
+    if (!valid) {
+      return res.json({ error: "Wrong password" });
+    }
 
     const token = jwt.sign(
       { id: user._id },
-      process.env.JWT_SECRET || "secret123"
+      process.env.JWT_SECRET || "d6ebddf5fb3a1e3cd40d66acf6c9a2eec5e47f69f535f9d3ac710cee7bcc72c5"
     );
+
+    console.log("TOKEN GENERATED");
 
     res.json({ token });
 
   } catch (err) {
-    console.log("Login error:", err);
+    console.log("FULL ERROR:", err); // 👈 THIS IS KEY
     res.status(500).json({ error: "Server error" });
   }
 });
